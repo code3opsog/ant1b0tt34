@@ -36,6 +36,22 @@ def get_csrf_token():
     
     return response.headers.get('x-csrf-token')
 
+@app.route('/', methods=['GET'])
+def home():
+    """Homepage to show server is running"""
+    return jsonify({
+        'status': 'Server is running!',
+        'message': 'Roblox Friend Filter Backend API',
+        'endpoints': {
+            'health': '/api/health',
+            'set_cookie': '/api/set-cookie (POST)',
+            'test_cookie': '/api/test-cookie (GET)',
+            'get_friend_requests': '/api/get-friend-requests (GET)',
+            'process_all': '/api/process-all-requests (POST)'
+        },
+        'cookieConfigured': roblox_cookie is not None
+    })
+
 @app.route('/api/set-cookie', methods=['POST'])
 def set_cookie():
     """Store the Roblox cookie"""
@@ -337,7 +353,10 @@ if __name__ == '__main__':
     print("=" * 60)
     print("Roblox Friend Filter Backend Server")
     print("=" * 60)
-    print("Server starting on http://localhost:5000")
+    
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Server starting on port {port}")
+    
     print("\nAvailable endpoints:")
     print("  POST /api/set-cookie          - Set Roblox cookie")
     print("  GET  /api/test-cookie         - Test cookie validity")
@@ -352,4 +371,11 @@ if __name__ == '__main__':
     print("   pip install flask flask-cors requests")
     print("\n")
     
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    # Use production WSGI server in production, development server locally
+    if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER'):
+        from waitress import serve
+        print("Running with production server (Waitress)")
+        serve(app, host='0.0.0.0', port=port)
+    else:
+        print("Running with development server")
+        app.run(debug=True, host='0.0.0.0', port=port)
